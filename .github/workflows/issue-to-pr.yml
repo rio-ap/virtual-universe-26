@@ -1,0 +1,35 @@
+name: Issue to PR queue (manual)
+
+# Terminal equivalent of the Section 2 Copilot Automation. The Copilot App
+# automation creates the draft PR; this workflow surfaces the queue and the
+# exact prompt on a manual run.
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to hand to /issue-to-pr (optional)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List open issues oldest first
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --state open --json number,title,createdAt \
+            --jq 'sort_by(.createdAt)[] | "\(.number)\t\(.createdAt)\t\(.title)"'
+      - name: Show the Copilot App automation settings
+        run: |
+          echo "Project: ${{ github.repository }}"
+          echo "Trigger: Manual"
+          echo "Prompt: /issue-to-pr ${{ inputs.issue }}"
+          echo "Find the oldest open issue in this fork that has no linked pull request and use this skill to propose a fix. Notify me when the PR is ready to be reviewed to be merged."
